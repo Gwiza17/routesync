@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import Button from '../../components/ui/Button';
+import { colors, spacing, radius, typography } from '../../theme';
 
 export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
@@ -11,6 +13,7 @@ export default function RegisterScreen({ navigation }) {
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   const handleRegister = async () => {
+    if (!form.name || !form.email || !form.password) return Alert.alert('Error', 'Name, email and password are required');
     setLoading(true);
     try {
       await register({ ...form, role });
@@ -22,53 +25,81 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Create Account</Text>
 
+      <Text style={styles.label}>I am a</Text>
       <View style={styles.roleRow}>
         {['passenger', 'driver'].map(r => (
           <TouchableOpacity key={r} style={[styles.roleBtn, role === r && styles.roleBtnActive]} onPress={() => setRole(r)}>
-            <Text style={[styles.roleTxt, role === r && styles.roleTxtActive]}>{r.charAt(0).toUpperCase() + r.slice(1)}</Text>
+            <Text style={[styles.roleTxt, role === r && styles.roleTxtActive]}>
+              {r === 'passenger' ? '🧑 Passenger' : '🚗 Driver'}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {['name', 'email', 'password', 'phone'].map(field => (
-        <TextInput key={field} style={styles.input} placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-          value={form[field]} onChangeText={v => set(field, v)}
-          secureTextEntry={field === 'password'} autoCapitalize="none" />
+      {[
+        { key: 'name', label: 'Full Name' },
+        { key: 'email', label: 'Email', autoCapitalize: 'none', keyboardType: 'email-address' },
+        { key: 'password', label: 'Password', secure: true },
+        { key: 'phone', label: 'Phone Number', keyboardType: 'phone-pad' },
+      ].map(f => (
+        <View key={f.key}>
+          <Text style={styles.fieldLabel}>{f.label}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={f.label}
+            placeholderTextColor={colors.muted}
+            value={form[f.key]}
+            onChangeText={v => set(f.key, v)}
+            secureTextEntry={f.secure}
+            autoCapitalize={f.autoCapitalize || 'words'}
+            keyboardType={f.keyboardType || 'default'}
+          />
+        </View>
       ))}
 
       {role === 'driver' && (
         <>
-          <TextInput style={styles.input} placeholder="Vehicle (e.g. 2022 Toyota Camry)" value={form.vehicle} onChangeText={v => set('vehicle', v)} />
-          <TextInput style={styles.input} placeholder="License Plate" value={form.licensePlate} onChangeText={v => set('licensePlate', v)} />
-          <TextInput style={styles.input} placeholder="Rate per Mile ($)" value={form.ratePerMile} onChangeText={v => set('ratePerMile', v)} keyboardType="decimal-pad" />
-          <TextInput style={styles.input} placeholder="Your Start Address" value={form.startAddress} onChangeText={v => set('startAddress', v)} />
+          <Text style={styles.sectionTitle}>Vehicle Details</Text>
+          {[
+            { key: 'vehicle', label: 'Vehicle (e.g. 2022 Toyota Camry)' },
+            { key: 'licensePlate', label: 'License Plate' },
+            { key: 'ratePerMile', label: 'Rate per Mile ($)', keyboardType: 'decimal-pad' },
+            { key: 'startAddress', label: 'Your Start Address' },
+          ].map(f => (
+            <View key={f.key}>
+              <Text style={styles.fieldLabel}>{f.label}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={f.label}
+                placeholderTextColor={colors.muted}
+                value={form[f.key]}
+                onChangeText={v => set(f.key, v)}
+                keyboardType={f.keyboardType || 'default'}
+              />
+            </View>
+          ))}
         </>
       )}
 
-      <TouchableOpacity style={styles.btn} onPress={handleRegister} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Create Account</Text>}
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.link}>Already have an account? Log in</Text>
-      </TouchableOpacity>
+      <Button label="Create Account" onPress={handleRegister} loading={loading} size="lg" style={{ marginTop: spacing.md }} />
+      <Button label="Already have an account? Log in" onPress={() => navigation.navigate('Login')} variant="ghost" style={{ marginTop: spacing.sm }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, backgroundColor: '#fff', flexGrow: 1, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '800', color: '#1a73e8', marginBottom: 24, textAlign: 'center' },
-  roleRow: { flexDirection: 'row', marginBottom: 20, gap: 12 },
-  roleBtn: { flex: 1, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', alignItems: 'center' },
-  roleBtnActive: { backgroundColor: '#1a73e8', borderColor: '#1a73e8' },
-  roleTxt: { color: '#666', fontWeight: '600' },
-  roleTxtActive: { color: '#fff' },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 14, marginBottom: 12, fontSize: 15 },
-  btn: { backgroundColor: '#1a73e8', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 8 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  link: { textAlign: 'center', color: '#1a73e8', marginTop: 16, fontSize: 14 },
+  container: { padding: spacing.lg, backgroundColor: colors.white, flexGrow: 1, paddingTop: 60 },
+  title: { ...typography.h1, marginBottom: spacing.lg },
+  label: { ...typography.label, marginBottom: spacing.sm },
+  roleRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
+  roleBtn: { flex: 1, padding: spacing.md, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
+  roleBtnActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+  roleTxt: { fontWeight: '600', color: colors.muted },
+  roleTxtActive: { color: colors.primary },
+  fieldLabel: { ...typography.caption, marginBottom: 4, marginTop: spacing.sm },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 14, fontSize: 15, color: colors.dark, backgroundColor: colors.surface },
+  sectionTitle: { ...typography.h3, marginTop: spacing.lg, marginBottom: spacing.sm, color: colors.primary },
 });

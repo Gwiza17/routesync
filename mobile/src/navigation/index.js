@@ -1,50 +1,74 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import usePushNotifications from '../hooks/usePushNotifications';
+import { colors } from '../theme';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 
-// Passenger tabs
 import SearchDriverScreen from '../screens/passenger/SearchDriverScreen';
 import DriverProfileScreen from '../screens/passenger/DriverProfileScreen';
 import BookingScreen from '../screens/passenger/BookingScreen';
 import CostEstimateScreen from '../screens/passenger/CostEstimateScreen';
 import MyBookingsScreen from '../screens/passenger/MyBookingsScreen';
 import TripTrackingScreen from '../screens/passenger/TripTrackingScreen';
+import RateDriverScreen from '../screens/passenger/RateDriverScreen';
 
-// Driver tabs
 import DriverHomeScreen from '../screens/driver/DriverHomeScreen';
 import ScheduleScreen from '../screens/driver/ScheduleScreen';
 import DriverBookingsScreen from '../screens/driver/DriverBookingsScreen';
 import ActiveTripScreen from '../screens/driver/ActiveTripScreen';
+import EarningsDashboardScreen from '../screens/driver/EarningsDashboardScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const tabIcon = (name) => ({ focused, color, size }) => (
+  <Ionicons name={focused ? name : `${name}-outline`} size={size} color={color} />
+);
+
+const tabOptions = {
+  headerShown: false,
+  tabBarActiveTintColor: colors.primary,
+  tabBarInactiveTintColor: colors.muted,
+  tabBarStyle: { borderTopColor: colors.border, elevation: 0, shadowOpacity: 0 },
+};
+
 const PassengerTabs = () => (
-  <Tab.Navigator screenOptions={{ headerShown: false }}>
-    <Tab.Screen name="Search" component={SearchDriverScreen} />
-    <Tab.Screen name="My Trips" component={MyBookingsScreen} />
+  <Tab.Navigator screenOptions={tabOptions}>
+    <Tab.Screen name="Search" component={SearchDriverScreen} options={{ tabBarIcon: tabIcon('search') }} />
+    <Tab.Screen name="My Trips" component={MyBookingsScreen} options={{ tabBarIcon: tabIcon('map') }} />
   </Tab.Navigator>
 );
 
 const DriverTabs = () => (
-  <Tab.Navigator screenOptions={{ headerShown: false }}>
-    <Tab.Screen name="Home" component={DriverHomeScreen} />
-    <Tab.Screen name="Schedule" component={ScheduleScreen} />
-    <Tab.Screen name="Bookings" component={DriverBookingsScreen} />
+  <Tab.Navigator screenOptions={tabOptions}>
+    <Tab.Screen name="Home" component={DriverHomeScreen} options={{ tabBarIcon: tabIcon('home') }} />
+    <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ tabBarIcon: tabIcon('calendar') }} />
+    <Tab.Screen name="Bookings" component={DriverBookingsScreen} options={{ tabBarIcon: tabIcon('car') }} />
   </Tab.Navigator>
 );
 
-export default function Navigation() {
+function AppNavigator() {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  const navigationRef = useRef(null);
+  usePushNotifications(navigationRef);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
           <>
@@ -58,14 +82,18 @@ export default function Navigation() {
             <Stack.Screen name="Booking" component={BookingScreen} />
             <Stack.Screen name="CostEstimate" component={CostEstimateScreen} />
             <Stack.Screen name="TripTracking" component={TripTrackingScreen} />
+            <Stack.Screen name="RateDriver" component={RateDriverScreen} />
           </>
         ) : (
           <>
             <Stack.Screen name="DriverTabs" component={DriverTabs} />
             <Stack.Screen name="ActiveTrip" component={ActiveTripScreen} />
+            <Stack.Screen name="Earnings" component={EarningsDashboardScreen} />
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+export default AppNavigator;

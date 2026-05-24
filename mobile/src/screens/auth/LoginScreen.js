@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import Button from '../../components/ui/Button';
+import { colors, spacing, radius, typography } from '../../theme';
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
@@ -21,30 +23,58 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.logo}>RouteSync</Text>
-      <Text style={styles.tagline}>Your ride, your schedule.</Text>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
+        <View style={styles.logoBlock}>
+          <Text style={styles.logo}>RouteSync</Text>
+          <Text style={styles.tagline}>Your ride, your schedule.</Text>
+        </View>
 
-      <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-      <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+        <TextInput
+          style={styles.input}
+          placeholder="Email address"
+          placeholderTextColor={colors.muted}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor={colors.muted}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-      <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Log In</Text>}
-      </TouchableOpacity>
+        <Button label="Log In" onPress={handleLogin} loading={loading} size="lg" style={{ marginTop: spacing.sm }} />
 
-      <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-        <Text style={styles.link}>Don't have an account? Sign up</Text>
-      </TouchableOpacity>
-    </View>
+        <Button
+          label="Don't have an account? Sign up"
+          onPress={() => navigation.navigate('Register')}
+          variant="ghost"
+          style={{ marginTop: spacing.md }}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#fff' },
-  logo: { fontSize: 36, fontWeight: '800', color: '#1a73e8', textAlign: 'center', marginBottom: 4 },
-  tagline: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 40 },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 14, marginBottom: 14, fontSize: 16 },
-  btn: { backgroundColor: '#1a73e8', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 8 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  link: { textAlign: 'center', color: '#1a73e8', marginTop: 20, fontSize: 14 },
+  container: { flex: 1, backgroundColor: colors.white },
+  inner: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
+  logoBlock: { alignItems: 'center', marginBottom: spacing.xxl },
+  logo: { fontSize: 42, fontWeight: '900', color: colors.primary, letterSpacing: -1 },
+  tagline: { ...typography.body, marginTop: spacing.xs },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: 14,
+    marginBottom: spacing.md,
+    fontSize: 16,
+    color: colors.dark,
+    backgroundColor: colors.surface,
+  },
 });

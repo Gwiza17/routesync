@@ -9,6 +9,7 @@ const User = sequelize.define('User', {
   role: { type: DataTypes.ENUM('driver', 'passenger'), allowNull: false },
   phone: { type: DataTypes.STRING },
   avatarUrl: { type: DataTypes.STRING },
+  expoPushToken: { type: DataTypes.STRING },
 });
 
 module.exports = User;

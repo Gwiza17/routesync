@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
-
-const STATUS_COLORS = { pending: '#f4b400', confirmed: '#1a73e8', in_progress: '#34a853', completed: '#666', cancelled: '#ea4335' };
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import StatusBadge from '../../components/ui/StatusBadge';
+import { colors, spacing, typography } from '../../theme';
 
 export default function DriverBookingsScreen({ navigation }) {
   const [bookings, setBookings] = useState([]);
@@ -20,21 +23,16 @@ export default function DriverBookingsScreen({ navigation }) {
 
   useEffect(() => { load(); }, []);
 
-  const accept = async (id) => {
+  const updateStatus = async (id, status, booking) => {
     try {
-      await api.patch(`/bookings/${id}/status`, { status: 'confirmed' });
-      setBookings(b => b.map(bk => bk.id === id ? { ...bk, status: 'confirmed' } : bk));
+      await api.patch(`/bookings/${id}/status`, { status });
+      if (status === 'in_progress') {
+        navigation.navigate('ActiveTrip', { booking: { ...booking, status: 'in_progress' } });
+      } else {
+        setBookings(b => b.map(bk => bk.id === id ? { ...bk, status } : bk));
+      }
     } catch {
-      Alert.alert('Error', 'Could not confirm booking');
-    }
-  };
-
-  const startTrip = async (booking) => {
-    try {
-      await api.patch(`/bookings/${booking.id}/status`, { status: 'in_progress' });
-      navigation.navigate('ActiveTrip', { booking: { ...booking, status: 'in_progress' } });
-    } catch {
-      Alert.alert('Error', 'Could not start trip');
+      Alert.alert('Error', 'Could not update booking');
     }
   };
 
@@ -44,33 +42,51 @@ export default function DriverBookingsScreen({ navigation }) {
       <FlatList
         data={bookings}
         keyExtractor={i => i.id}
+        contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>No bookings yet</Text>}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.passenger}>{item.passenger?.name}</Text>
-              <Text style={[styles.status, { color: STATUS_COLORS[item.status] }]}>{item.status.replace('_', ' ')}</Text>
-            </View>
-            <Text style={styles.date}>{item.schedule?.date} · {item.schedule?.startTime}</Text>
-            <Text style={styles.addr}>{item.pickupAddress}</Text>
-            <Text style={styles.arrow}>↓</Text>
-            <Text style={styles.addr}>{item.dropoffAddress}</Text>
-            <Text style={styles.cost}>${item.estimatedCost} estimated</Text>
-
-            <View style={styles.actions}>
-              {item.status === 'pending' && (
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#1a73e8' }]} onPress={() => accept(item.id)}>
-                  <Text style={styles.actionTxt}>Accept</Text>
-                </TouchableOpacity>
-              )}
-              {item.status === 'confirmed' && (
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#34a853' }]} onPress={() => startTrip(item)}>
-                  <Text style={styles.actionTxt}>Start Trip</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="calendar-outline" size={48} color={colors.border} />
+            <Text style={styles.emptyText}>No bookings yet</Text>
           </View>
+        }
+        renderItem={({ item }) => (
+          <Card style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={styles.passengerName}>{item.passenger?.name}</Text>
+                <Text style={styles.date}>{item.schedule?.date} · {item.schedule?.startTime}</Text>
+              </View>
+              <StatusBadge status={item.status} />
+            </View>
+
+            <View style={styles.route}>
+              <View style={styles.routeRow}>
+                <Ionicons name="radio-button-on" size={14} color={colors.primary} />
+                <Text style={styles.addr} numberOfLines={1}>{item.pickupAddress}</Text>
+              </View>
+              <View style={styles.routeLine} />
+              <View style={styles.routeRow}>
+                <Ionicons name="location" size={14} color={colors.danger} />
+                <Text style={styles.addr} numberOfLines={1}>{item.dropoffAddress}</Text>
+              </View>
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.cost}>${item.estimatedCost} est.</Text>
+              <View style={styles.actions}>
+                {item.status === 'pending' && (
+                  <>
+                    <Button label="Decline" onPress={() => updateStatus(item.id, 'cancelled', item)} variant="outline" size="sm" style={{ flex: 1 }} />
+                    <Button label="Accept" onPress={() => updateStatus(item.id, 'confirmed', item)} size="sm" style={{ flex: 1 }} />
+                  </>
+                )}
+                {item.status === 'confirmed' && (
+                  <Button label="Start Trip →" onPress={() => updateStatus(item.id, 'in_progress', item)} variant="success" size="sm" style={{ flex: 1 }} />
+                )}
+              </View>
+            </View>
+          </Card>
         )}
       />
     </View>
@@ -78,18 +94,20 @@ export default function DriverBookingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: '800', color: '#222', marginTop: 50, marginBottom: 20 },
-  empty: { textAlign: 'center', color: '#999', marginTop: 60 },
-  card: { backgroundColor: '#f8f9fa', borderRadius: 12, padding: 16, marginBottom: 14 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  passenger: { fontWeight: '800', color: '#222', fontSize: 16 },
-  status: { fontWeight: '700', textTransform: 'capitalize' },
-  date: { color: '#1a73e8', marginBottom: 8, fontWeight: '600' },
-  addr: { color: '#444', fontSize: 14 },
-  arrow: { color: '#999', marginVertical: 2 },
-  cost: { color: '#34a853', fontWeight: '700', marginTop: 8 },
-  actions: { flexDirection: 'row', marginTop: 12, gap: 10 },
-  actionBtn: { flex: 1, padding: 10, borderRadius: 8, alignItems: 'center' },
-  actionTxt: { color: '#fff', fontWeight: '700' },
+  container: { flex: 1, backgroundColor: colors.surface },
+  title: { ...typography.h1, padding: spacing.lg, paddingTop: 60, backgroundColor: colors.white },
+  list: { padding: spacing.md },
+  emptyState: { alignItems: 'center', marginTop: 80, gap: spacing.md },
+  emptyText: { ...typography.body, color: colors.muted },
+  card: { marginBottom: spacing.md },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.md },
+  passengerName: { ...typography.h3 },
+  date: { ...typography.caption, color: colors.primary, marginTop: 2 },
+  route: { backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.md },
+  routeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  routeLine: { width: 1, height: 12, backgroundColor: colors.border, marginLeft: 7 },
+  addr: { ...typography.body, fontSize: 13, flex: 1 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  cost: { ...typography.label, color: colors.success, fontSize: 16 },
+  actions: { flex: 1, flexDirection: 'row', gap: spacing.sm },
 });

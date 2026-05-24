@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
+import Button from '../../components/ui/Button';
+import { colors, spacing, radius, typography } from '../../theme';
 
 export default function SearchDriverScreen({ navigation }) {
   const [code, setCode] = useState('');
@@ -21,29 +24,45 @@ export default function SearchDriverScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Find a Driver</Text>
-      <Text style={styles.sub}>Enter a Driver ID (e.g. RS-AB1234)</Text>
+      <View style={styles.hero}>
+        <Ionicons name="car-sport" size={56} color={colors.primary} />
+        <Text style={styles.title}>Find Your Driver</Text>
+        <Text style={styles.sub}>Enter the Driver ID shared with you</Text>
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Driver ID"
-        value={code}
-        onChangeText={setCode}
-        autoCapitalize="characters"
-      />
-
-      <TouchableOpacity style={styles.btn} onPress={search} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Search</Text>}
-      </TouchableOpacity>
+      <View style={styles.form}>
+        <View style={styles.inputRow}>
+          <Ionicons name="search" size={20} color={colors.muted} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. RS-AB1234"
+            placeholderTextColor={colors.muted}
+            value={code}
+            onChangeText={setCode}
+            autoCapitalize="characters"
+            onSubmitEditing={search}
+          />
+        </View>
+        <Button label="Search" onPress={search} loading={loading} size="lg" />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#fff', justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '800', color: '#1a73e8', marginBottom: 6 },
-  sub: { color: '#666', marginBottom: 32 },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 14, fontSize: 18, letterSpacing: 2, marginBottom: 16 },
-  btn: { backgroundColor: '#1a73e8', borderRadius: 10, padding: 16, alignItems: 'center' },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: colors.white, justifyContent: 'center', padding: spacing.lg },
+  hero: { alignItems: 'center', marginBottom: spacing.xxl },
+  title: { ...typography.h1, marginTop: spacing.md, textAlign: 'center' },
+  sub: { ...typography.body, textAlign: 'center', marginTop: spacing.xs },
+  form: { gap: spacing.md },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryLight,
+  },
+  inputIcon: { marginLeft: spacing.md },
+  input: { flex: 1, padding: 14, fontSize: 20, color: colors.dark, letterSpacing: 3, fontWeight: '700' },
 });

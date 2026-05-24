@@ -1,10 +1,13 @@
 const axios = require('axios');
 
+const hasGoogleKey = () =>
+  process.env.GOOGLE_MAPS_API_KEY && process.env.GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_KEY_HERE';
+
 /**
  * Haversine straight-line distance fallback (miles).
  */
 const haversineMiles = (lat1, lng1, lat2, lng2) => {
-  const R = 3958.8; // Earth radius in miles
+  const R = 3958.8;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLng = (lng2 - lng1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
@@ -12,19 +15,19 @@ const haversineMiles = (lat1, lng1, lat2, lng2) => {
 };
 
 /**
- * Uses Google Maps Distance Matrix API if key is set, otherwise falls back to haversine.
+ * Returns distance in miles and duration in minutes between two points.
  */
-const getDistanceMiles = async (originLat, originLng, destLat, destLng) => {
-  if (!process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_KEY_HERE') {
-    return haversineMiles(originLat, originLng, destLat, destLng);
+const getDistanceAndDuration = async (originLat, originLng, destLat, destLng) => {
+  if (!hasGoogleKey()) {
+    return { miles: haversineMiles(originLat, originLng, destLat, destLng), durationMinutes: null };
   }
 
-  const url = `https://maps.googleapis.com/maps/api/distancematrix/json`;
-  const { data } = await axios.get(url, {
+  const { data } = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
     params: {
       origins: `${originLat},${originLng}`,
       destinations: `${destLat},${destLng}`,
       units: 'imperial',
+      mode: 'driving',
       key: process.env.GOOGLE_MAPS_API_KEY,
     },
   });
@@ -32,25 +35,54 @@ const getDistanceMiles = async (originLat, originLng, destLat, destLng) => {
   const element = data.rows[0]?.elements[0];
   if (!element || element.status !== 'OK') throw new Error('Could not calculate distance');
 
-  const miles = element.distance.value / 1609.34;
-  return parseFloat(miles.toFixed(2));
+  const miles = parseFloat((element.distance.value / 1609.34).toFixed(2));
+  const durationMinutes = Math.ceil(element.duration.value / 60);
+  return { miles, durationMinutes };
 };
 
 /**
- * Calculates two-leg trip cost:
- *   Leg 1: driver start → passenger pickup
- *   Leg 2: passenger pickup → dropoff
+ * Geocode an address string to { address, latitude, longitude }[]
  */
-const estimateTripCost = async ({ driverLat, driverLng, pickupLat, pickupLng, dropoffLat, dropoffLng, ratePerMile }) => {
-  const [leg1Miles, leg2Miles] = await Promise.all([
-    getDistanceMiles(driverLat, driverLng, pickupLat, pickupLng),
-    getDistanceMiles(pickupLat, pickupLng, dropoffLat, dropoffLng),
-  ]);
+const geocodeAddress = async (address) => {
+  if (!hasGoogleKey()) {
+    throw new Error('Google Maps API key required for geocoding');
+  }
 
-  const totalMiles = leg1Miles + leg2Miles;
-  const estimatedCost = parseFloat((totalMiles * ratePerMile).toFixed(2));
+  const { data } = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+    params: { address, key: process.env.GOOGLE_MAPS_API_KEY },
+  });
 
-  return { leg1Miles, leg2Miles, totalMiles, estimatedCost };
+  if (data.status !== 'OK' || !data.results.length) return [];
+
+  return data.results.slice(0, 5).map(r => ({
+    address: r.formatted_address,
+    latitude: r.geometry.location.lat,
+    longitude: r.geometry.location.lng,
+  }));
 };
 
-module.exports = { getDistanceMiles, estimateTripCost };
+/**
+ * Two-leg trip cost estimation.
+ * Leg 1: driver start → pickup
+ * Leg 2: pickup → dropoff
+ */
+const estimateTripCost = async ({ driverLat, driverLng, pickupLat, pickupLng, dropoffLat, dropoffLng, ratePerMile }) => {
+  const [leg1, leg2] = await Promise.all([
+    getDistanceAndDuration(driverLat, driverLng, pickupLat, pickupLng),
+    getDistanceAndDuration(pickupLat, pickupLng, dropoffLat, dropoffLng),
+  ]);
+
+  const totalMiles = leg1.miles + leg2.miles;
+  const estimatedCost = parseFloat((totalMiles * ratePerMile).toFixed(2));
+
+  return {
+    leg1Miles: leg1.miles,
+    leg1DurationMinutes: leg1.durationMinutes,
+    leg2Miles: leg2.miles,
+    leg2DurationMinutes: leg2.durationMinutes,
+    totalMiles,
+    estimatedCost,
+  };
+};
+
+module.exports = { getDistanceAndDuration, geocodeAddress, estimateTripCost };

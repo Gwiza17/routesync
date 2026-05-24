@@ -11,7 +11,9 @@
     "@stripe/stripe-react-native": "0.64.0",
     "axios": "^1.16.1",
     "expo": "~56.0.4",
+    "expo-haptics": "^56.0.3",
     "expo-location": "~56.0.13",
+    "expo-notifications": "^56.0.13",
     "expo-status-bar": "~56.0.4",
     "leaflet": "^1.9.4",
     "react": "19.2.3",
@@ -19,11 +21,14 @@
     "react-leaflet": "^5.0.0",
     "react-native": "0.85.3",
     "react-native-calendars": "^1.1314.0",
+    "react-native-chart-kit": "^6.12.2",
     "react-native-maps": "1.27.2",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
+    "react-native-star-rating-widget": "^1.11.0",
     "react-native-web": "^0.21.2",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "sqlite3": "^6.0.1"
   },
   "scripts": {
     "start": "expo start",

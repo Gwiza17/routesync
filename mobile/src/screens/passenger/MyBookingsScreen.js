@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
-
-const STATUS_COLORS = { pending: '#f4b400', confirmed: '#1a73e8', in_progress: '#34a853', completed: '#666', cancelled: '#ea4335' };
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import StatusBadge from '../../components/ui/StatusBadge';
+import { colors, spacing, typography } from '../../theme';
 
 export default function MyBookingsScreen({ navigation }) {
   const [bookings, setBookings] = useState([]);
@@ -26,25 +29,49 @@ export default function MyBookingsScreen({ navigation }) {
       <FlatList
         data={bookings}
         keyExtractor={i => i.id}
+        contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>No bookings yet</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="map-outline" size={48} color={colors.border} />
+            <Text style={styles.emptyText}>No trips yet</Text>
+            <Text style={styles.emptySub}>Search for a driver to book your first trip</Text>
+          </View>
+        }
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => item.status === 'in_progress' && navigation.navigate('TripTracking', { booking: item })}
-          >
-            <View style={styles.row}>
-              <Text style={styles.date}>{item.schedule?.date}</Text>
-              <Text style={[styles.status, { color: STATUS_COLORS[item.status] }]}>{item.status.replace('_', ' ')}</Text>
+          <Card style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={styles.driverName}>{item.driver?.user?.name}</Text>
+                <Text style={styles.date}>{item.schedule?.date} · {item.schedule?.startTime}</Text>
+              </View>
+              <StatusBadge status={item.status} />
             </View>
-            <Text style={styles.addr}>{item.pickupAddress}</Text>
-            <Text style={styles.arrow}>↓</Text>
-            <Text style={styles.addr}>{item.dropoffAddress}</Text>
-            <Text style={styles.cost}>${item.estimatedCost} estimated</Text>
-            {item.status === 'in_progress' && (
-              <Text style={styles.trackHint}>Tap to track live →</Text>
-            )}
-          </TouchableOpacity>
+
+            <View style={styles.route}>
+              <View style={styles.routeRow}>
+                <Ionicons name="radio-button-on" size={14} color={colors.primary} />
+                <Text style={styles.addr} numberOfLines={1}>{item.pickupAddress}</Text>
+              </View>
+              <View style={styles.routeLine} />
+              <View style={styles.routeRow}>
+                <Ionicons name="location" size={14} color={colors.danger} />
+                <Text style={styles.addr} numberOfLines={1}>{item.dropoffAddress}</Text>
+              </View>
+            </View>
+
+            <View style={styles.cardFooter}>
+              <Text style={styles.cost}>${item.estimatedCost} est.</Text>
+              <View style={styles.actions}>
+                {item.status === 'in_progress' && (
+                  <Button label="Track Live" size="sm" onPress={() => navigation.navigate('TripTracking', { booking: item })} />
+                )}
+                {item.status === 'completed' && (
+                  <Button label="Rate Driver ★" size="sm" variant="outline" onPress={() => navigation.navigate('RateDriver', { booking: item })} />
+                )}
+              </View>
+            </View>
+          </Card>
         )}
       />
     </View>
@@ -52,15 +79,21 @@ export default function MyBookingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: '800', color: '#222', marginTop: 50, marginBottom: 20 },
-  empty: { textAlign: 'center', color: '#999', marginTop: 60 },
-  card: { backgroundColor: '#f8f9fa', borderRadius: 12, padding: 16, marginBottom: 14 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  date: { fontWeight: '700', color: '#222' },
-  status: { fontWeight: '700', textTransform: 'capitalize' },
-  addr: { color: '#444', fontSize: 14 },
-  arrow: { color: '#999', marginVertical: 2, fontSize: 12 },
-  cost: { color: '#34a853', fontWeight: '700', marginTop: 8 },
-  trackHint: { color: '#1a73e8', fontSize: 12, marginTop: 4 },
+  container: { flex: 1, backgroundColor: colors.surface },
+  title: { ...typography.h1, padding: spacing.lg, paddingTop: 60, backgroundColor: colors.white },
+  list: { padding: spacing.md },
+  emptyState: { alignItems: 'center', marginTop: 80, gap: spacing.sm },
+  emptyText: { ...typography.h3, color: colors.muted },
+  emptySub: { ...typography.body, textAlign: 'center' },
+  card: { marginBottom: spacing.md },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.md },
+  driverName: { ...typography.h3 },
+  date: { ...typography.caption, color: colors.primary, marginTop: 2 },
+  route: { backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.md, gap: spacing.xs },
+  routeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  routeLine: { width: 1, height: 12, backgroundColor: colors.border, marginLeft: 7 },
+  addr: { ...typography.body, fontSize: 13, flex: 1 },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cost: { ...typography.label, color: colors.success },
+  actions: { flexDirection: 'row', gap: spacing.sm },
 });
