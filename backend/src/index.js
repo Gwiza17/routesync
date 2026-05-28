@@ -52,7 +52,9 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 const IS_DEV = process.env.NODE_ENV !== 'production';
 
-sequelize.sync({ alter: IS_DEV }).then(() => {
+// alter:true breaks SQLite with FK constraints — use only with Postgres
+const useAlter = IS_DEV && !!process.env.DATABASE_URL;
+sequelize.sync({ alter: useAlter }).then(() => {
   server.listen(PORT, '0.0.0.0', () => console.log(`RouteSync API v2 running on port ${PORT}`));
 }).catch((err) => {
   console.error('Database sync error:', err.message);
