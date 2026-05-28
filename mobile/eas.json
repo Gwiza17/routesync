@@ -1,0 +1,39 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://routesync-production.up.railway.app/api",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_placeholder",
+        "EXPO_PUBLIC_PROJECT_ID": "routesync"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://routesync-production.up.railway.app/api",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_placeholder",
+        "EXPO_PUBLIC_PROJECT_ID": "routesync"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
