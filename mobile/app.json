@@ -38,6 +38,12 @@
           "enableGooglePay": false
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "abeab518-3d3e-493d-81b4-574d1fc870b9"
+      }
+    },
+    "owner": "tshanda"
   }
 }
