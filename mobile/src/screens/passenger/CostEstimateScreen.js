@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import ScreenHeader from '../../components/ui/ScreenHeader';
@@ -23,9 +23,14 @@ export default function CostEstimateScreen({ route, navigation }) {
         dropoffLatitude: dropoff.latitude,
         dropoffLongitude: dropoff.longitude,
       });
-      Alert.alert('Booking Confirmed!', `Estimated cost: $${data.estimatedCost}`, [
-        { text: 'View My Trips', onPress: () => navigation.navigate('My Trips') },
-      ]);
+      navigation.replace('BookingConfirmation', {
+        booking: data,
+        driver,
+        slot,
+        pickup,
+        dropoff,
+        estimatedCost: data.estimatedCost,
+      });
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message || 'Booking failed');
     } finally {
@@ -33,9 +38,15 @@ export default function CostEstimateScreen({ route, navigation }) {
     }
   };
 
+  const HomeButton = () => (
+    <TouchableOpacity onPress={() => navigation.navigate('PassengerTabs')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <Ionicons name="home-outline" size={24} color={colors.primary} />
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Trip Summary" onBack={() => navigation.goBack()} />
+      <ScreenHeader title="Trip Summary" onBack={() => navigation.goBack()} rightAction={<HomeButton />} />
       <ScrollView contentContainerStyle={styles.content}>
 
         <Card style={{ marginBottom: spacing.md }}>

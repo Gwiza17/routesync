@@ -70,7 +70,7 @@ export default function AddressSearch({ placeholder = 'Search address...', onSel
 }
 
 const styles = StyleSheet.create({
-  wrapper: { marginBottom: spacing.sm, zIndex: 10 },
+  wrapper: { marginBottom: spacing.sm },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -82,17 +82,14 @@ const styles = StyleSheet.create({
   icon: { marginLeft: spacing.md },
   input: { flex: 1, padding: 14, fontSize: 15, color: colors.dark },
   dropdown: {
-    position: 'absolute',
-    top: 52,
-    left: 0,
-    right: 0,
+    marginTop: 2,
     backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     maxHeight: 200,
+    overflow: 'hidden',
     ...shadows.card,
-    zIndex: 100,
   },
   item: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.surface },
   itemText: { flex: 1, fontSize: 14, color: colors.dark },

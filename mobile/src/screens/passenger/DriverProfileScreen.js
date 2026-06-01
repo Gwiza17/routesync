@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import ScreenHeader from '../../components/ui/ScreenHeader';
@@ -26,9 +26,20 @@ export default function DriverProfileScreen({ route, navigation }) {
 
   const stars = (n) => '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n));
 
+  const HomeButton = () => (
+    <TouchableOpacity onPress={() => navigation.navigate('PassengerTabs')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <Ionicons name="home-outline" size={24} color={colors.primary} />
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
-      <ScreenHeader title={driver.user?.name} subtitle={driver.driverCode} onBack={() => navigation.goBack()} />
+      <ScreenHeader
+        title={driver.user?.name}
+        subtitle={driver.driverCode}
+        onBack={() => navigation.goBack()}
+        rightAction={<HomeButton />}
+      />
       <ScrollView contentContainerStyle={styles.content}>
 
         <Card style={styles.profileCard}>

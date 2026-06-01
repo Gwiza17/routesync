@@ -46,8 +46,14 @@ export const AuthProvider = ({ children }) => {
     setDriver(null);
   };
 
+  const updateDriver = async (updates) => {
+    const updated = { ...driver, ...updates };
+    await AsyncStorage.setItem('driver', JSON.stringify(updated));
+    setDriver(updated);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, driver, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, driver, loading, login, register, logout, updateDriver }}>
       {children}
     </AuthContext.Provider>
   );

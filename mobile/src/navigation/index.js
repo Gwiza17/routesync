@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import usePushNotifications from '../hooks/usePushNotifications';
 import { colors } from '../theme';
 
+import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 
@@ -16,6 +17,7 @@ import DriverProfileScreen from '../screens/passenger/DriverProfileScreen';
 import BookingScreen from '../screens/passenger/BookingScreen';
 import CostEstimateScreen from '../screens/passenger/CostEstimateScreen';
 import MyBookingsScreen from '../screens/passenger/MyBookingsScreen';
+import BookingConfirmationScreen from '../screens/passenger/BookingConfirmationScreen';
 import TripTrackingScreen from '../screens/passenger/TripTrackingScreen';
 import RateDriverScreen from '../screens/passenger/RateDriverScreen';
 
@@ -72,6 +74,7 @@ function AppNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
           <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
           </>
@@ -81,6 +84,7 @@ function AppNavigator() {
             <Stack.Screen name="DriverProfile" component={DriverProfileScreen} />
             <Stack.Screen name="Booking" component={BookingScreen} />
             <Stack.Screen name="CostEstimate" component={CostEstimateScreen} />
+            <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
             <Stack.Screen name="TripTracking" component={TripTrackingScreen} />
             <Stack.Screen name="RateDriver" component={RateDriverScreen} />
           </>

@@ -37,12 +37,19 @@ export default function BookingScreen({ route, navigation }) {
     }
   };
 
+  const HomeButton = () => (
+    <TouchableOpacity onPress={() => navigation.navigate('PassengerTabs')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <Ionicons name="home-outline" size={24} color={colors.primary} />
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <ScreenHeader
         title="Book a Trip"
         subtitle={`${slot.date} · ${slot.startTime} – ${slot.endTime}`}
         onBack={() => navigation.goBack()}
+        rightAction={<HomeButton />}
       />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
