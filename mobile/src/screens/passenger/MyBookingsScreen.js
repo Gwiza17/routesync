@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import Card from '../../components/ui/Card';
@@ -25,7 +25,12 @@ export default function MyBookingsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Trips</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>My Trips</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Search')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="home-outline" size={24} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={bookings}
         keyExtractor={i => i.id}
@@ -80,7 +85,16 @@ export default function MyBookingsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  title: { ...typography.h1, padding: spacing.lg, paddingTop: 60, backgroundColor: colors.white },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: 60,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.white,
+  },
+  title: { ...typography.h1 },
   list: { padding: spacing.md },
   emptyState: { alignItems: 'center', marginTop: 80, gap: spacing.sm },
   emptyText: { ...typography.h3, color: colors.muted },

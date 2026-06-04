@@ -13,8 +13,9 @@ export default function DriverProfileScreen({ route, navigation }) {
   const [ratings, setRatings] = useState([]);
 
   useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
     api.get(`/drivers/${driver.driverCode}/schedule`)
-      .then(r => setSlots(r.data.filter(s => !s.isBooked)))
+      .then(r => setSlots(r.data.filter(s => !s.isBooked && s.date >= today)))
       .catch(() => Alert.alert('Error', 'Could not load schedule'));
 
     if (driver.userId) {

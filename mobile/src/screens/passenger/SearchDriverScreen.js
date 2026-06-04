@@ -1,15 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import { colors, spacing, radius, typography } from '../../theme';
 
+const VERIFY_DISMISSED_KEY = 'verify_banner_dismissed';
+
 export default function SearchDriverScreen({ navigation }) {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showVerifyBanner, setShowVerifyBanner] = useState(false);
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    AsyncStorage.getItem(VERIFY_DISMISSED_KEY).then(val => {
+      if (!val) setShowVerifyBanner(true);
+    });
+  }, []);
+
+  const dismissBanner = async () => {
+    await AsyncStorage.setItem(VERIFY_DISMISSED_KEY, 'true');
+    setShowVerifyBanner(false);
+  };
 
   const search = async () => {
     if (!code.trim()) return;
@@ -39,6 +54,20 @@ export default function SearchDriverScreen({ navigation }) {
           <Ionicons name="log-out-outline" size={26} color={colors.primary} />
         </TouchableOpacity>
       </View>
+
+      {/* ID verification nudge */}
+      {showVerifyBanner && (
+        <View style={styles.verifyBanner}>
+          <Ionicons name="shield-checkmark-outline" size={20} color={colors.warningDark} />
+          <View style={{ flex: 1, marginLeft: spacing.sm }}>
+            <Text style={styles.verifyTitle}>Verify your identity</Text>
+            <Text style={styles.verifySub}>Drivers trust verified riders. ID verification coming soon.</Text>
+          </View>
+          <TouchableOpacity onPress={dismissBanner} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close" size={18} color={colors.warningDark} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.hero}>
         <Ionicons name="car-sport" size={56} color={colors.primary} />
@@ -77,6 +106,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   userName: { ...typography.label, color: colors.mid },
+
+  verifyBanner: {
+    position: 'absolute',
+    top: 104,
+    left: spacing.lg,
+    right: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: radius.md,
+    borderLeftWidth: 4,
+    borderLeftColor: '#D97706',
+    padding: spacing.sm,
+  },
+  verifyTitle: { fontSize: 13, fontWeight: '700', color: '#92400E' },
+  verifySub: { fontSize: 12, color: '#92400E', marginTop: 1 },
+
   hero: { alignItems: 'center', marginBottom: spacing.xxl },
   title: { ...typography.h1, marginTop: spacing.md, textAlign: 'center' },
   sub: { ...typography.body, textAlign: 'center', marginTop: spacing.xs },
