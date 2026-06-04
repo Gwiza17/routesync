@@ -18,6 +18,7 @@ import BookingScreen from '../screens/passenger/BookingScreen';
 import CostEstimateScreen from '../screens/passenger/CostEstimateScreen';
 import MyBookingsScreen from '../screens/passenger/MyBookingsScreen';
 import BookingConfirmationScreen from '../screens/passenger/BookingConfirmationScreen';
+import QRScannerScreen from '../screens/passenger/QRScannerScreen';
 import TripTrackingScreen from '../screens/passenger/TripTrackingScreen';
 import RateDriverScreen from '../screens/passenger/RateDriverScreen';
 
@@ -85,6 +86,7 @@ function AppNavigator() {
             <Stack.Screen name="Booking" component={BookingScreen} />
             <Stack.Screen name="CostEstimate" component={CostEstimateScreen} />
             <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
+            <Stack.Screen name="QRScanner" component={QRScannerScreen} options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="TripTracking" component={TripTrackingScreen} />
             <Stack.Screen name="RateDriver" component={RateDriverScreen} />
           </>

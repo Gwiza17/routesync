@@ -37,6 +37,12 @@
           "merchantIdentifier": "merchant.com.routesync",
           "enableGooglePay": false
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow RouteSync to access your camera to scan driver QR codes."
+        }
       ]
     ],
     "extra": {

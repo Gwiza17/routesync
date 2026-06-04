@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, StyleSheet, Alert, TouchableOpacity,
-  ScrollView, FlatList, ActivityIndicator,
+  ScrollView, ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import Card from '../../components/ui/Card';
 import { colors, spacing, radius, typography } from '../../theme';
 
 const VERIFY_DISMISSED_KEY = 'verify_banner_dismissed';
+const DEFAULT_DRIVER_KEY = 'default_driver';
 
 // Generate time slots 06:00 – 21:00 in 30-minute steps
 const TIME_SLOTS = Array.from({ length: 32 }, (_, i) => {
@@ -35,6 +36,7 @@ export default function SearchDriverScreen({ navigation }) {
   // Shared
   const [mode, setMode] = useState('id'); // 'id' | 'browse'
   const [showVerifyBanner, setShowVerifyBanner] = useState(false);
+  const [defaultDriver, setDefaultDriver] = useState(null);
 
   // By-ID mode
   const [code, setCode] = useState('');
@@ -52,6 +54,9 @@ export default function SearchDriverScreen({ navigation }) {
   useEffect(() => {
     AsyncStorage.getItem(VERIFY_DISMISSED_KEY).then(val => {
       if (!val) setShowVerifyBanner(true);
+    });
+    AsyncStorage.getItem(DEFAULT_DRIVER_KEY).then(val => {
+      if (val) setDefaultDriver(JSON.parse(val));
     });
   }, []);
 
@@ -146,11 +151,33 @@ export default function SearchDriverScreen({ navigation }) {
       {/* ── By-ID mode ────────────────────────────────────────────────────── */}
       {mode === 'id' && (
         <View style={styles.idSection}>
+          {/* Default driver card (set via QR scan) */}
+          {defaultDriver && (
+            <TouchableOpacity
+              style={styles.defaultCard}
+              onPress={() => navigation.navigate('DriverProfile', { driver: defaultDriver })}
+              activeOpacity={0.8}
+            >
+              <View style={styles.defaultLeft}>
+                <View style={styles.defaultAvatar}>
+                  <Ionicons name="person" size={20} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.defaultLabel}>Your Driver</Text>
+                  <Text style={styles.defaultName}>{defaultDriver.user?.name}</Text>
+                  <Text style={styles.defaultCode}>{defaultDriver.driverCode}</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+
           <View style={styles.hero}>
             <Ionicons name="car-sport" size={48} color={colors.primary} />
             <Text style={styles.title}>Find Your Driver</Text>
-            <Text style={styles.sub}>Enter the Driver ID shared with you</Text>
+            <Text style={styles.sub}>Enter a Driver ID or scan their QR code</Text>
           </View>
+
           <View style={styles.idForm}>
             <View style={styles.idInputRow}>
               <Ionicons name="search" size={20} color={colors.muted} style={{ marginLeft: spacing.md }} />
@@ -164,7 +191,15 @@ export default function SearchDriverScreen({ navigation }) {
                 onSubmitEditing={searchById}
               />
             </View>
-            <Button label="Search" onPress={searchById} loading={idLoading} size="lg" />
+            <Button label="Search by ID" onPress={searchById} loading={idLoading} size="lg" />
+
+            <TouchableOpacity
+              style={styles.scanBtn}
+              onPress={() => navigation.navigate('QRScanner')}
+            >
+              <Ionicons name="qr-code-outline" size={22} color={colors.primary} />
+              <Text style={styles.scanTxt}>Scan Driver QR Code</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -358,6 +393,43 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
   },
   idInput: { flex: 1, padding: 14, fontSize: 20, color: colors.dark, letterSpacing: 3, fontWeight: '700' },
+
+  scanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 14,
+    backgroundColor: colors.primaryLight,
+  },
+  scanTxt: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+
+  defaultCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  defaultLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  defaultAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  defaultLabel: { ...typography.caption, color: colors.primary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  defaultName: { ...typography.label, fontSize: 15 },
+  defaultCode: { ...typography.caption, color: colors.primary },
 
   // Browse section
   browseContent: { padding: spacing.lg, paddingTop: spacing.sm },

@@ -4,6 +4,7 @@ import {
   Share, Modal, TextInput, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import Card from '../../components/ui/Card';
@@ -12,6 +13,9 @@ import { colors, spacing, radius, typography } from '../../theme';
 
 export default function DriverHomeScreen({ navigation }) {
   const { user, driver, logout, updateDriver } = useAuth();
+
+  // ── QR Code modal ────────────────────────────────────────────────────────
+  const [qrVisible, setQrVisible] = useState(false);
 
   // ── Edit Profile modal ───────────────────────────────────────────────────
   const [editVisible, setEditVisible] = useState(false);
@@ -81,10 +85,17 @@ export default function DriverHomeScreen({ navigation }) {
         <Text style={styles.idLabel}>Your Driver ID</Text>
         <Text style={styles.idCode}>{driver?.driverCode}</Text>
         <Text style={styles.idSub}>Share this with passengers so they can find and book you</Text>
-        <TouchableOpacity style={styles.shareBtn} onPress={shareDriverId}>
-          <Ionicons name="share-social-outline" size={18} color={colors.primary} />
-          <Text style={styles.shareTxt}>Share Driver ID</Text>
-        </TouchableOpacity>
+        <View style={styles.idActions}>
+          <TouchableOpacity style={styles.idActionBtn} onPress={() => setQrVisible(true)}>
+            <Ionicons name="qr-code-outline" size={18} color={colors.primary} />
+            <Text style={styles.idActionTxt}>Show QR</Text>
+          </TouchableOpacity>
+          <View style={styles.idDivider} />
+          <TouchableOpacity style={styles.idActionBtn} onPress={shareDriverId}>
+            <Ionicons name="share-social-outline" size={18} color={colors.primary} />
+            <Text style={styles.idActionTxt}>Share</Text>
+          </TouchableOpacity>
+        </View>
       </Card>
 
       {/* Stats */}
@@ -104,6 +115,23 @@ export default function DriverHomeScreen({ navigation }) {
       <Button label="Edit Profile" onPress={openEdit} variant="outline" style={{ marginTop: spacing.md }} />
       <Button label="View Earnings" onPress={() => navigation.navigate('Earnings')} variant="outline" style={{ marginTop: spacing.sm }} />
       <Button label="Log Out" onPress={logout} variant="ghost" style={{ marginTop: spacing.sm }} />
+
+      {/* ── QR Code Modal ──────────────────────────────────────────────── */}
+      <Modal visible={qrVisible} transparent animationType="fade">
+        <TouchableOpacity style={styles.qrOverlay} activeOpacity={1} onPress={() => setQrVisible(false)}>
+          <View style={styles.qrBox}>
+            <Text style={styles.qrTitle}>Your Driver QR Code</Text>
+            <Text style={styles.qrSub}>Passengers scan this to add you as their default driver</Text>
+            <View style={styles.qrWrapper}>
+              <QRCode value={driver?.driverCode || 'ROUTESYNC'} size={200} />
+            </View>
+            <Text style={styles.qrCode}>{driver?.driverCode}</Text>
+            <TouchableOpacity style={styles.qrCloseBtn} onPress={() => setQrVisible(false)}>
+              <Text style={styles.qrCloseTxt}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ── Edit Profile Modal ─────────────────────────────────────────── */}
       <Modal visible={editVisible} transparent animationType="slide">
@@ -184,8 +212,39 @@ const styles = StyleSheet.create({
   },
   idCode: { fontSize: 40, fontWeight: '900', color: colors.primary, letterSpacing: 4, marginVertical: spacing.sm },
   idSub: { ...typography.caption, textAlign: 'center', color: colors.mid, marginBottom: spacing.md },
-  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  shareTxt: { color: colors.primary, fontWeight: '700', fontSize: 14 },
+  idActions: { flexDirection: 'row', alignItems: 'center' },
+  idActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
+  idActionTxt: { color: colors.primary, fontWeight: '700', fontSize: 14 },
+  idDivider: { width: 1, height: 20, backgroundColor: colors.border },
+
+  // QR Modal
+  qrOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  qrBox: {
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    alignItems: 'center',
+    marginHorizontal: spacing.lg,
+    width: '85%',
+  },
+  qrTitle: { ...typography.h2, marginBottom: spacing.xs, textAlign: 'center' },
+  qrSub: { ...typography.caption, textAlign: 'center', color: colors.mid, marginBottom: spacing.lg },
+  qrWrapper: {
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  qrCode: { fontSize: 24, fontWeight: '900', color: colors.primary, letterSpacing: 3, marginBottom: spacing.lg },
+  qrCloseBtn: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+  qrCloseTxt: { fontWeight: '700', color: colors.dark },
 
   statsRow: { flexDirection: 'row', gap: spacing.md },
   statCard: { flex: 1, alignItems: 'center', padding: spacing.md, gap: spacing.xs },
