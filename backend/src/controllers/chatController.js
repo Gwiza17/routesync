@@ -1,7 +1,8 @@
-const Message = require('../models/Message');
-const Booking = require('../models/Booking');
-const Driver  = require('../models/Driver');
-const User    = require('../models/User');
+const Message  = require('../models/Message');
+const Booking  = require('../models/Booking');
+const Driver   = require('../models/Driver');
+const User     = require('../models/User');
+const Schedule = require('../models/Schedule');
 
 // ── Helper — verify caller is part of the booking ─────────────────────────
 async function verifyParticipant(bookingId, userId) {
@@ -99,4 +100,86 @@ const initiateCall = async (req, res) => {
   }
 };
 
-module.exports = { getMessages, initiateCall };
+// ── GET /chat/my — all conversations for the logged-in user ─────────────────
+const getMyChats = async (req, res) => {
+  try {
+    const userId   = req.user.id;
+    const userRole = req.user.role;
+    let bookings   = [];
+
+    if (userRole === 'passenger') {
+      bookings = await Booking.findAll({
+        where: { passengerId: userId },
+        include: [
+          { model: Driver, as: 'driver',
+            include: [{ model: User, as: 'user', attributes: ['id', 'name'] }] },
+          { model: Schedule, as: 'schedule', attributes: ['date', 'startTime'] },
+        ],
+      });
+    } else {
+      const driver = await Driver.findOne({ where: { userId } });
+      if (!driver) return res.json([]);
+      bookings = await Booking.findAll({
+        where: { driverId: driver.id },
+        include: [
+          { model: User, as: 'passenger', attributes: ['id', 'name'] },
+          { model: Driver, as: 'driver',
+            include: [{ model: User, as: 'user', attributes: ['id', 'name'] }] },
+          { model: Schedule, as: 'schedule', attributes: ['date', 'startTime'] },
+        ],
+      });
+    }
+
+    const otherRole = userRole === 'passenger' ? 'driver' : 'passenger';
+
+    const rows = await Promise.all(bookings.map(async (booking) => {
+      const [total, unread, last] = await Promise.all([
+        Message.count({ where: { bookingId: booking.id } }),
+        Message.count({ where: { bookingId: booking.id, senderRole: otherRole, isRead: false } }),
+        Message.findOne({ where: { bookingId: booking.id }, order: [['createdAt', 'DESC']] }),
+      ]);
+      if (total === 0) return null;
+
+      const otherName = userRole === 'passenger'
+        ? booking.driver?.user?.name
+        : booking.passenger?.name;
+
+      return {
+        bookingId:       booking.id,
+        status:          booking.status,
+        date:            booking.schedule?.date,
+        startTime:       booking.schedule?.startTime,
+        otherName,
+        lastMessage:     last?.content,
+        lastMessageAt:   last?.createdAt,
+        lastMessageRole: last?.senderRole,
+        unreadCount:     unread,
+        booking:         booking.toJSON(),
+      };
+    }));
+
+    const chats = rows
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+
+    res.json(chats);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ── DELETE /chat/:bookingId — delete all messages in a conversation ──────────
+const deleteChat = async (req, res) => {
+  try {
+    const { booking, role } = await verifyParticipant(req.params.bookingId, req.user.id);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    if (!role)    return res.status(403).json({ message: 'Not a participant in this booking' });
+
+    await Message.destroy({ where: { bookingId: req.params.bookingId } });
+    res.json({ message: 'Chat deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { getMessages, getMyChats, deleteChat, initiateCall };

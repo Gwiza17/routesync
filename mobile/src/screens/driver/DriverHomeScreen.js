@@ -211,6 +211,7 @@ export default function DriverHomeScreen({ navigation }) {
       </View>
 
       <Button label="Edit Profile" onPress={openEdit} variant="outline" style={{ marginTop: spacing.md }} />
+      <Button label="Messages" onPress={() => navigation.navigate('ChatsList')} variant="outline" style={{ marginTop: spacing.sm }} />
       <Button label="View Earnings" onPress={() => navigation.navigate('Earnings')} variant="outline" style={{ marginTop: spacing.sm }} />
       <Button label="Log Out" onPress={logout} variant="ghost" style={{ marginTop: spacing.sm }} />
 

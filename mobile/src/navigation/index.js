@@ -20,6 +20,7 @@ import MyBookingsScreen from '../screens/passenger/MyBookingsScreen';
 import BookingConfirmationScreen from '../screens/passenger/BookingConfirmationScreen';
 import QRScannerScreen from '../screens/passenger/QRScannerScreen';
 import ChatScreen from '../screens/shared/ChatScreen';
+import ChatsListScreen from '../screens/shared/ChatsListScreen';
 import TripTrackingScreen from '../screens/passenger/TripTrackingScreen';
 import RateDriverScreen from '../screens/passenger/RateDriverScreen';
 
@@ -91,6 +92,7 @@ function AppNavigator() {
             <Stack.Screen name="TripTracking" component={TripTrackingScreen} />
             <Stack.Screen name="RateDriver" component={RateDriverScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="ChatsList" component={ChatsListScreen} />
           </>
         ) : (
           <>
@@ -98,6 +100,7 @@ function AppNavigator() {
             <Stack.Screen name="ActiveTrip" component={ActiveTripScreen} />
             <Stack.Screen name="Earnings" component={EarningsDashboardScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="ChatsList" component={ChatsListScreen} />
           </>
         )}
       </Stack.Navigator>

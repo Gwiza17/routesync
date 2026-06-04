@@ -111,9 +111,14 @@ export default function SearchDriverScreen({ navigation }) {
       {/* Top bar */}
       <View style={styles.topBar}>
         <Text style={styles.userName}>{user?.name}</Text>
-        <TouchableOpacity onPress={confirmLogout} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="log-out-outline" size={26} color={colors.primary} />
-        </TouchableOpacity>
+        <View style={styles.topActions}>
+          <TouchableOpacity onPress={() => navigation.navigate('ChatsList')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chatbubbles-outline" size={24} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={confirmLogout} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="log-out-outline" size={26} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Verification nudge */}
@@ -339,7 +344,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     backgroundColor: colors.white,
   },
-  userName: { ...typography.label, color: colors.mid },
+  userName: { ...typography.label, color: colors.mid, flex: 1 },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 
   verifyBanner: {
     flexDirection: 'row',
