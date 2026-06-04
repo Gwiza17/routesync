@@ -134,4 +134,4 @@ const estimateTripCost = async ({ driverLat, driverLng, pickupLat, pickupLng, dr
   };
 };
 
-module.exports = { getDistanceAndDuration, geocodeAddress, estimateTripCost };
+module.exports = { haversineMiles, getDistanceAndDuration, geocodeAddress, estimateTripCost };

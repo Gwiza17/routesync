@@ -23,6 +23,7 @@ import ChatScreen from '../screens/shared/ChatScreen';
 import ChatsListScreen from '../screens/shared/ChatsListScreen';
 import TripTrackingScreen from '../screens/passenger/TripTrackingScreen';
 import RateDriverScreen from '../screens/passenger/RateDriverScreen';
+import RequestRideScreen from '../screens/passenger/RequestRideScreen';
 
 import DriverHomeScreen from '../screens/driver/DriverHomeScreen';
 import ScheduleScreen from '../screens/driver/ScheduleScreen';
@@ -91,6 +92,7 @@ function AppNavigator() {
             <Stack.Screen name="QRScanner" component={QRScannerScreen} options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="TripTracking" component={TripTrackingScreen} />
             <Stack.Screen name="RateDriver" component={RateDriverScreen} />
+            <Stack.Screen name="RequestRide" component={RequestRideScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="ChatsList" component={ChatsListScreen} />
           </>

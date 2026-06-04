@@ -14,10 +14,14 @@ require('./models/Rating');
 require('./models/TripStop');
 require('./models/Message');
 require('./models/DriverPassenger');
+require('./models/RideRequest');
+
+const { setIo } = require('./socket');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
+setIo(io);
 
 app.use(cors());
 // Note: Stripe webhook needs raw body — mount before express.json()
@@ -29,6 +33,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/drivers', require('./routes/driver'));
 app.use('/api/bookings', require('./routes/booking'));
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/ride-requests', require('./routes/rideRequest'));
 app.use('/api/ratings', require('./routes/rating'));
 app.use('/api/earnings', require('./routes/earnings'));
 app.use('/api/payments', require('./routes/payment'));
@@ -39,6 +44,11 @@ app.get('/health', (_, res) => res.json({ status: 'ok', version: '2.0' }));
 const Message = require('./models/Message');
 
 io.on('connection', (socket) => {
+
+  // ── User personal room (for ride requests, notifications) ───────────────
+  socket.on('join:user', ({ userId }) => {
+    if (userId) socket.join(`user:${userId}`);
+  });
 
   socket.on('join:booking', ({ bookingId }) => {
     socket.join(`booking:${bookingId}`);

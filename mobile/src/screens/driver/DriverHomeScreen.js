@@ -1,16 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Share, Modal, TextInput, Alert, KeyboardAvoidingView, Platform,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { io } from 'socket.io-client';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { colors, spacing, radius, typography } from '../../theme';
+
+const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+const pad2 = n => n.toString().padStart(2, '0');
+const fmtSecs = s => `${Math.floor(s / 60)}:${pad2(s % 60)}`;
 
 export default function DriverHomeScreen({ navigation }) {
   const { user, driver, logout, updateDriver } = useAuth();
@@ -55,6 +60,75 @@ export default function DriverHomeScreen({ navigation }) {
     } catch {
       Alert.alert('Error', 'Could not remove passenger');
     }
+  };
+
+  // ── Incoming ride request ────────────────────────────────────────────────
+  const [incomingRequest,  setIncomingRequest]  = useState(null);
+  const [requestSeconds,   setRequestSeconds]   = useState(0);
+  const [accepting,        setAccepting]         = useState(false);
+  const socketRef = useRef(null);
+  const rideTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const sock = io(SOCKET_URL, { transports: ['websocket'] });
+    socketRef.current = sock;
+    sock.emit('join:user', { userId: user.id });
+
+    sock.on('ride:request', (req) => {
+      clearInterval(rideTimerRef.current);
+      const secs = Math.max(0, Math.floor((new Date(req.expiresAt) - Date.now()) / 1000));
+      setRequestSeconds(secs);
+      setIncomingRequest(req);
+      // Countdown timer for this modal
+      rideTimerRef.current = setInterval(() => {
+        setRequestSeconds(prev => {
+          if (prev <= 1) {
+            clearInterval(rideTimerRef.current);
+            setIncomingRequest(null);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    });
+
+    // Another driver accepted — dismiss modal
+    sock.on('ride:cancelled', ({ rideRequestId }) => {
+      setIncomingRequest(prev => prev?.id === rideRequestId ? null : prev);
+      clearInterval(rideTimerRef.current);
+    });
+
+    return () => {
+      sock.disconnect();
+      clearInterval(rideTimerRef.current);
+    };
+  }, [user?.id]);
+
+  const handleAccept = async () => {
+    if (!incomingRequest) return;
+    setAccepting(true);
+    try {
+      await api.post(`/ride-requests/${incomingRequest.id}/accept`);
+      clearInterval(rideTimerRef.current);
+      setIncomingRequest(null);
+      Alert.alert('🎉 Ride Accepted!', 'The booking is confirmed. Check your Bookings tab for details.');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Could not accept ride';
+      Alert.alert('Not Available', msg);
+      clearInterval(rideTimerRef.current);
+      setIncomingRequest(null);
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    if (!incomingRequest) return;
+    const id = incomingRequest.id;
+    clearInterval(rideTimerRef.current);
+    setIncomingRequest(null);
+    try { await api.post(`/ride-requests/${id}/decline`); } catch {}
   };
 
   // ── QR Code modal ────────────────────────────────────────────────────────
@@ -215,6 +289,83 @@ export default function DriverHomeScreen({ navigation }) {
       <Button label="View Earnings" onPress={() => navigation.navigate('Earnings')} variant="outline" style={{ marginTop: spacing.sm }} />
       <Button label="Log Out" onPress={logout} variant="ghost" style={{ marginTop: spacing.sm }} />
 
+      {/* ── Incoming Ride Request Modal ────────────────────────────────── */}
+      <Modal visible={!!incomingRequest} transparent animationType="slide">
+        <View style={styles.rideModalOverlay}>
+          <View style={styles.rideModal}>
+            <View style={styles.rideModalHeader}>
+              <View style={styles.rideModalBadge}>
+                <Ionicons name="flash" size={18} color={colors.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rideModalTitle}>Incoming Ride Request</Text>
+                <Text style={styles.rideModalPassenger}>{incomingRequest?.passengerName}</Text>
+              </View>
+              <View style={styles.rideTimerWrap}>
+                <Text style={styles.rideTimer}>{fmtSecs(requestSeconds)}</Text>
+                <Text style={styles.rideTimerLabel}>expires</Text>
+              </View>
+            </View>
+
+            {/* Route */}
+            <View style={styles.rideRoute}>
+              <View style={styles.rideRouteRow}>
+                <Ionicons name="radio-button-on" size={14} color={colors.success} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rideRouteLabel}>PICKUP</Text>
+                  <Text style={styles.rideRouteAddr} numberOfLines={2}>{incomingRequest?.pickupAddress}</Text>
+                </View>
+              </View>
+              <View style={styles.rideRouteDivider} />
+              <View style={styles.rideRouteRow}>
+                <Ionicons name="location" size={14} color={colors.danger} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rideRouteLabel}>DROP-OFF</Text>
+                  <Text style={styles.rideRouteAddr} numberOfLines={2}>{incomingRequest?.dropoffAddress}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Stats */}
+            <View style={styles.rideStats}>
+              <View style={styles.rideStat}>
+                <Text style={styles.rideStatVal}>{incomingRequest?.distanceMiles} mi</Text>
+                <Text style={styles.rideStatLabel}>Distance</Text>
+              </View>
+              <View style={styles.rideStatDivider} />
+              <View style={styles.rideStat}>
+                <Text style={[styles.rideStatVal, { color: colors.success }]}>
+                  ${(incomingRequest?.distanceMiles * parseFloat(driver?.ratePerMile || 0)).toFixed(2)}
+                </Text>
+                <Text style={styles.rideStatLabel}>Your Earnings</Text>
+              </View>
+              <View style={styles.rideStatDivider} />
+              <View style={styles.rideStat}>
+                <Text style={styles.rideStatVal}>${driver?.ratePerMile}/mi</Text>
+                <Text style={styles.rideStatLabel}>Your Rate</Text>
+              </View>
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.rideActions}>
+              <TouchableOpacity style={styles.declineBtn} onPress={handleDecline} disabled={accepting}>
+                <Ionicons name="close" size={20} color={colors.danger} />
+                <Text style={styles.declineTxt}>Decline</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept} disabled={accepting}>
+                {accepting
+                  ? <ActivityIndicator color={colors.white} size="small" />
+                  : <>
+                      <Ionicons name="checkmark" size={20} color={colors.white} />
+                      <Text style={styles.acceptTxt}>Accept Ride</Text>
+                    </>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* ── QR Code Modal ──────────────────────────────────────────────── */}
       <Modal visible={qrVisible} transparent animationType="fade">
         <TouchableOpacity style={styles.qrOverlay} activeOpacity={1} onPress={() => setQrVisible(false)}>
@@ -368,6 +519,88 @@ const styles = StyleSheet.create({
   clientAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   clientName: { ...typography.label, fontSize: 14 },
   clientEmail: { ...typography.caption },
+
+  // Incoming Ride Request Modal
+  rideModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  rideModal: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl || 48,
+  },
+  rideModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  rideModalBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rideModalTitle:     { ...typography.label, fontSize: 12, color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  rideModalPassenger: { ...typography.h3, marginTop: 2 },
+  rideTimerWrap: { alignItems: 'center' },
+  rideTimer:      { fontSize: 24, fontWeight: '900', color: colors.primary },
+  rideTimerLabel: { ...typography.caption, color: colors.muted },
+
+  rideRoute: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  rideRouteRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  rideRouteLabel:   { ...typography.caption, color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 9 },
+  rideRouteAddr:    { ...typography.body, fontSize: 14 },
+  rideRouteDivider: { width: 1, height: 16, backgroundColor: colors.border, marginLeft: 7, marginVertical: 3 },
+
+  rideStats: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    marginBottom: spacing.lg,
+  },
+  rideStat:        { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
+  rideStatVal:     { ...typography.h3, fontSize: 16 },
+  rideStatLabel:   { ...typography.caption, color: colors.muted, marginTop: 2 },
+  rideStatDivider: { width: 1, backgroundColor: colors.border },
+
+  rideActions: { flexDirection: 'row', gap: spacing.md },
+  declineBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderWidth: 1.5,
+    borderColor: colors.danger,
+    borderRadius: radius.md,
+    paddingVertical: 14,
+  },
+  declineTxt: { color: colors.danger, fontWeight: '700', fontSize: 15 },
+  acceptBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.success,
+    borderRadius: radius.md,
+    paddingVertical: 14,
+  },
+  acceptTxt: { color: colors.white, fontWeight: '700', fontSize: 15 },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

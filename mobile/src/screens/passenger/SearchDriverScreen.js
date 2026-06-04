@@ -153,6 +153,22 @@ export default function SearchDriverScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {/* ── Request a Ride banner ─────────────────────────────────────────── */}
+      <TouchableOpacity
+        style={styles.requestBanner}
+        onPress={() => navigation.navigate('RequestRide')}
+        activeOpacity={0.85}
+      >
+        <View style={styles.requestBannerLeft}>
+          <Ionicons name="flash" size={20} color={colors.white} />
+          <View>
+            <Text style={styles.requestBannerTitle}>Need a ride now?</Text>
+            <Text style={styles.requestBannerSub}>Request from nearby pool drivers instantly</Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.white} />
+      </TouchableOpacity>
+
       {/* ── By-ID mode ────────────────────────────────────────────────────── */}
       {mode === 'id' && (
         <View style={styles.idSection}>
@@ -360,6 +376,21 @@ const styles = StyleSheet.create({
   },
   verifyTitle: { fontSize: 13, fontWeight: '700', color: '#92400E' },
   verifySub: { fontSize: 11, color: '#92400E', marginTop: 1 },
+
+  // Request a Ride banner
+  requestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primary,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  requestBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  requestBannerTitle: { color: colors.white, fontWeight: '700', fontSize: 14 },
+  requestBannerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 1 },
 
   // Mode toggle
   toggle: {
