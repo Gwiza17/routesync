@@ -12,6 +12,7 @@ const Driver = sequelize.define('Driver', {
   startLatitude: { type: DataTypes.FLOAT },
   startLongitude: { type: DataTypes.FLOAT },
   startAddress: { type: DataTypes.STRING },
+  mode: { type: DataTypes.ENUM('private', 'pool'), defaultValue: 'private' },
   isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
   averageRating: { type: DataTypes.FLOAT, defaultValue: 0 },
   totalRatings: { type: DataTypes.INTEGER, defaultValue: 0 },

@@ -30,6 +30,9 @@ export default function QRScannerScreen({ navigation }) {
     try {
       const { data: driver } = await api.get(`/drivers/${code}`);
 
+      // Link passenger to driver (creates DriverPassenger record — required for private drivers)
+      await api.post('/drivers/passengers/link', { driverCode: code }).catch(() => {});
+
       // Persist as the passenger's default driver
       await AsyncStorage.setItem('default_driver_code', driver.driverCode);
       await AsyncStorage.setItem('default_driver', JSON.stringify(driver));

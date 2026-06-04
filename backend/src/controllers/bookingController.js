@@ -1,8 +1,9 @@
-const Booking = require('../models/Booking');
-const Driver = require('../models/Driver');
-const Schedule = require('../models/Schedule');
-const User = require('../models/User');
-const TripStop = require('../models/TripStop');
+const Booking         = require('../models/Booking');
+const Driver          = require('../models/Driver');
+const Schedule        = require('../models/Schedule');
+const User            = require('../models/User');
+const TripStop        = require('../models/TripStop');
+const DriverPassenger = require('../models/DriverPassenger');
 const { estimateTripCost, getDistanceAndDuration } = require('../utils/distance');
 const { sendPushNotification } = require('../utils/notifications');
 
@@ -52,6 +53,19 @@ const createBooking = async (req, res) => {
 
     const driver = await Driver.findByPk(schedule.driverId);
     const driverUser = await User.findByPk(driver.userId);
+
+    // Private-mode gate: passenger must be linked to this driver
+    if (driver.mode === 'private') {
+      const link = await DriverPassenger.findOne({
+        where: { driverId: driver.id, passengerId: req.user.id },
+      });
+      if (!link) {
+        return res.status(403).json({
+          message: 'This driver only accepts bookings from their private clients.',
+          hint: 'Scan the driver\'s QR code to get access.',
+        });
+      }
+    }
 
     let totalMiles = 0, estimatedCost = 0, leg1Miles = 0, leg2Miles = 0;
 

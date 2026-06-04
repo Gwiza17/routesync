@@ -13,6 +13,7 @@ require('./models/Booking');
 require('./models/Rating');
 require('./models/TripStop');
 require('./models/Message');
+require('./models/DriverPassenger');
 
 const app = express();
 const server = http.createServer(app);

@@ -61,6 +61,10 @@ export default function DriverProfileScreen({ route, navigation }) {
           <View style={styles.detailsRow}>
             <Chip icon="car" label={driver.vehicle} />
             <Chip icon="id-card" label={driver.licensePlate} />
+            {driver.mode === 'private'
+              ? <Chip icon="lock-closed" label="Private" color={colors.warning} />
+              : <Chip icon="globe-outline" label="Open" color={colors.success} />
+            }
           </View>
         </Card>
 
@@ -99,10 +103,10 @@ export default function DriverProfileScreen({ route, navigation }) {
   );
 }
 
-const Chip = ({ icon, label }) => label ? (
+const Chip = ({ icon, label, color }) => label ? (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-    <Ionicons name={icon} size={14} color={colors.muted} />
-    <Text style={{ ...typography.caption }}>{label}</Text>
+    <Ionicons name={icon} size={14} color={color || colors.muted} />
+    <Text style={{ ...typography.caption, color: color || colors.muted }}>{label}</Text>
   </View>
 ) : null;
 

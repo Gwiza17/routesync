@@ -1,7 +1,8 @@
 const { Op } = require('sequelize');
-const Driver = require('../models/Driver');
-const User = require('../models/User');
-const Schedule = require('../models/Schedule');
+const Driver          = require('../models/Driver');
+const User            = require('../models/User');
+const Schedule        = require('../models/Schedule');
+const DriverPassenger = require('../models/DriverPassenger');
 const { geocodeAddress } = require('../utils/distance');
 
 // ── Haversine (straight-line miles) ─────────────────────────────────────────
@@ -67,7 +68,7 @@ const getAvailableDrivers = async (req, res) => {
         {
           model: Driver,
           as: 'driver',
-          where: { isActive: true },
+          where: { isActive: true, mode: 'pool' },
           include: [{ model: User, as: 'user', attributes: ['name', 'email'] }],
         },
       ],
@@ -178,6 +179,54 @@ const updateDriverProfile = async (req, res) => {
   }
 };
 
+// ── GET /drivers/passengers — driver's private client list ──────────────────
+const getMyPassengers = async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ where: { userId: req.user.id } });
+    if (!driver) return res.status(404).json({ message: 'Driver not found' });
+
+    const links = await DriverPassenger.findAll({
+      where: { driverId: driver.id },
+      include: [{ model: User, as: 'passenger', attributes: ['id', 'name', 'email'] }],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(links);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ── POST /drivers/passengers/link — passenger links to a driver via QR ──────
+const linkPassenger = async (req, res) => {
+  try {
+    const { driverCode } = req.body;
+    const driver = await Driver.findOne({ where: { driverCode } });
+    if (!driver) return res.status(404).json({ message: 'Driver not found' });
+
+    const [link, created] = await DriverPassenger.findOrCreate({
+      where: { driverId: driver.id, passengerId: req.user.id },
+    });
+    res.json({ linked: true, created, driverMode: driver.mode });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ── DELETE /drivers/passengers/:passengerId — driver removes a client ───────
+const removePassenger = async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ where: { userId: req.user.id } });
+    if (!driver) return res.status(404).json({ message: 'Driver not found' });
+
+    await DriverPassenger.destroy({
+      where: { driverId: driver.id, passengerId: req.params.passengerId },
+    });
+    res.json({ message: 'Passenger removed' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getDriverByCode,
   getDriverSchedule,
@@ -185,4 +234,7 @@ module.exports = {
   addScheduleSlot,
   deleteScheduleSlot,
   updateDriverProfile,
+  getMyPassengers,
+  linkPassenger,
+  removePassenger,
 };
