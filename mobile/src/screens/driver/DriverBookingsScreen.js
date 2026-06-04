@@ -82,7 +82,33 @@ export default function DriverBookingsScreen({ navigation }) {
                   </>
                 )}
                 {item.status === 'confirmed' && (
-                  <Button label="Start Trip →" onPress={() => updateStatus(item.id, 'in_progress', item)} variant="success" size="sm" style={{ flex: 1 }} />
+                  <>
+                    <Button
+                      label="Chat"
+                      variant="outline"
+                      size="sm"
+                      style={{ flex: 1 }}
+                      onPress={() => navigation.navigate('Chat', {
+                        booking: item,
+                        otherName: item.passenger?.name || 'Passenger',
+                        myRole: 'driver',
+                      })}
+                    />
+                    <Button label="Start Trip →" onPress={() => updateStatus(item.id, 'in_progress', item)} variant="success" size="sm" style={{ flex: 1 }} />
+                  </>
+                )}
+                {item.status === 'in_progress' && (
+                  <Button
+                    label="Chat"
+                    variant="outline"
+                    size="sm"
+                    style={{ flex: 1 }}
+                    onPress={() => navigation.navigate('Chat', {
+                      booking: item,
+                      otherName: item.passenger?.name || 'Passenger',
+                      myRole: 'driver',
+                    })}
+                  />
                 )}
               </View>
             </View>

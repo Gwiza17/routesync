@@ -12,6 +12,7 @@ require('./models/Schedule');
 require('./models/Booking');
 require('./models/Rating');
 require('./models/TripStop');
+require('./models/Message');
 
 const app = express();
 const server = http.createServer(app);
@@ -26,24 +27,49 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/drivers', require('./routes/driver'));
 app.use('/api/bookings', require('./routes/booking'));
+app.use('/api/chat', require('./routes/chat'));
 app.use('/api/ratings', require('./routes/rating'));
 app.use('/api/earnings', require('./routes/earnings'));
 app.use('/api/payments', require('./routes/payment'));
 
 app.get('/health', (_, res) => res.json({ status: 'ok', version: '2.0' }));
 
-// Socket.io — live driver location
+// Socket.io — live driver location + in-app chat
+const Message = require('./models/Message');
+
 io.on('connection', (socket) => {
-  socket.on('driver:location', ({ bookingId, latitude, longitude }) => {
-    socket.to(`booking:${bookingId}`).emit('driver:location', { latitude, longitude });
-  });
 
   socket.on('join:booking', ({ bookingId }) => {
     socket.join(`booking:${bookingId}`);
   });
 
+  // ── Driver location ──────────────────────────────────────────────────────
+  socket.on('driver:location', ({ bookingId, latitude, longitude }) => {
+    socket.to(`booking:${bookingId}`).emit('driver:location', { latitude, longitude });
+  });
+
   socket.on('stop:arrived', ({ bookingId, stopId }) => {
     socket.to(`booking:${bookingId}`).emit('stop:arrived', { stopId });
+  });
+
+  // ── Chat ─────────────────────────────────────────────────────────────────
+  socket.on('chat:send', async ({ bookingId, senderId, senderRole, senderName, content }) => {
+    try {
+      if (!bookingId || !senderId || !senderRole || !content?.trim()) return;
+      const msg = await Message.create({ bookingId, senderId, senderRole, content: content.trim() });
+      io.to(`booking:${bookingId}`).emit('chat:message', {
+        id:         msg.id,
+        bookingId,
+        senderId,
+        senderRole,
+        senderName,
+        content:    msg.content,
+        createdAt:  msg.createdAt,
+        isRead:     false,
+      });
+    } catch (err) {
+      socket.emit('chat:error', { message: err.message });
+    }
   });
 
   socket.on('disconnect', () => {});

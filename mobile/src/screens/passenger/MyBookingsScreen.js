@@ -68,6 +68,18 @@ export default function MyBookingsScreen({ navigation }) {
             <View style={styles.cardFooter}>
               <Text style={styles.cost}>${item.estimatedCost} est.</Text>
               <View style={styles.actions}>
+                {(item.status === 'confirmed' || item.status === 'in_progress') && (
+                  <Button
+                    label="Chat"
+                    size="sm"
+                    variant="outline"
+                    onPress={() => navigation.navigate('Chat', {
+                      booking: item,
+                      otherName: item.driver?.user?.name || 'Driver',
+                      myRole: 'passenger',
+                    })}
+                  />
+                )}
                 {item.status === 'in_progress' && (
                   <Button label="Track Live" size="sm" onPress={() => navigation.navigate('TripTracking', { booking: item })} />
                 )}
