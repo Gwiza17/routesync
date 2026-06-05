@@ -43,7 +43,7 @@ export default function DriverHomeScreen({ navigation }) {
     setModeLoading(true);
     try {
       const { data } = await api.put('/drivers/profile', { mode: newMode });
-      await updateDriver(data);
+      updateDriver(data);
       setMode(newMode);
       if (newMode === 'private') loadPassengers();
     } catch {
@@ -167,8 +167,8 @@ export default function DriverHomeScreen({ navigation }) {
         ratePerMile: rate,
         startAddress: form.startAddress.trim(),
       });
-      await updateDriver(data);
-      setEditVisible(false);
+      setEditVisible(false);   // close modal BEFORE state update to prevent flicker
+      updateDriver(data);
       Alert.alert('Saved', 'Your profile has been updated.');
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message || 'Could not save profile');

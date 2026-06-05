@@ -46,10 +46,10 @@ export const AuthProvider = ({ children }) => {
     setDriver(null);
   };
 
-  const updateDriver = async (updates) => {
+  const updateDriver = (updates) => {
     const updated = { ...driver, ...updates };
-    await AsyncStorage.setItem('driver', JSON.stringify(updated));
-    setDriver(updated);
+    setDriver(updated);                                          // update state immediately — no flicker
+    AsyncStorage.setItem('driver', JSON.stringify(updated));    // persist in background
   };
 
   return (
